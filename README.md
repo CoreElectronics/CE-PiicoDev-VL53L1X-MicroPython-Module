@@ -3,6 +3,8 @@
 <!-- TODO update link -->
 This is the firmware repo for the [Core Electronics PiicoDev® Distance Sensor VL53L1X](https://core-electronics.com.au)
 
+This module depends on the [PiicoDev Unified Library](https://github.com/CoreElectronics/CE-PiicoDev-Unified). Place `PiicoDev_Unified.py` in the same directory.
+
 <!-- TODO update tutorial link
 See the [Quickstart Guide](https://core-electronics.com.au/tutorials/quickstart-guide-piicodev-precision-temperature-sensor-tmp117-and-micropython.html)
 
