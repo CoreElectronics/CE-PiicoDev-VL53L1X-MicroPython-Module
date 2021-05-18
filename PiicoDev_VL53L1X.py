@@ -100,14 +100,12 @@ class PiicoDev_VL53L1X:
     def __init__(self, address=0x29, i2c=i2c):
         self.i2c = i2c
         self.address = address
-                
         self.reset()
         sleep_ms(1)
         if self.read_model_id() != 0xEACC:
             raise RuntimeError('Failed to find expected ID register values. Check wiring!')
         # write default configuration
         self.i2c.writeto_mem(self.address, 0x2D, VL51L1X_DEFAULT_CONFIGURATION, addrsize=16)
-#         self.i2c._i2c_write(self.address, 0x002D, VL51L1X_DEFAULT_CONFIGURATION, len(VL51L1X_DEFAULT_CONFIGURATION))
         sleep_ms(100)
         # the API triggers this change in VL53L1_init_and_start_range() once a
         # measurement is started; assumes MM1 and MM2 are disabled
@@ -124,7 +122,7 @@ class PiicoDev_VL53L1X:
         data = self.i2c.readfrom_mem(self.address, reg, 2, addrsize=16)
         return (data[0]<<8) + data[1]
     def read_model_id(self):
-        return self.readReg16Bit(0x010F)        
+        return self.readReg16Bit(0x010F) 
     def reset(self):
         self.writeReg(0x0000, 0x00)
         sleep_ms(100)
