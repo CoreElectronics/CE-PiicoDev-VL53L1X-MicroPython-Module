@@ -1,10 +1,9 @@
 from PiicoDev_VL53L1X import PiicoDev_VL53L1X
+from time import sleep
 
-from utime import sleep_ms
-
-laser = PiicoDev_VL53L1X()
+distSensor = PiicoDev_VL53L1X()
 
 while True:
-    dist = laser.read() # read the distance in millimetres
-    print("{:4d} | ".format(dist))
-    sleep_ms(1000)
+    dist = distSensor.read() # read the distance in millimetres
+    print("dist" + str(dist)) # convert the number to a string and print
+    sleep(0.1)
