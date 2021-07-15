@@ -1,5 +1,4 @@
 from PiicoDev_Unified import *
-i2c = PiicoDev_Unified_I2C() 
 
 VL51L1X_DEFAULT_CONFIGURATION = bytes([
 0x00, # 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else don't touch */
@@ -97,8 +96,8 @@ VL51L1X_DEFAULT_CONFIGURATION = bytes([
 
 
 class PiicoDev_VL53L1X:
-    def __init__(self, address=0x29, i2c=i2c):
-        self.i2c = i2c
+    def __init__(self, bus=None, freq=None, sda=None, scl=None, address=0x29):
+        self.i2c = create_unified_i2c(bus=bus, freq=freq, sda=sda, scl=scl)
         self.address = address
         self.reset()
         sleep_ms(1)
