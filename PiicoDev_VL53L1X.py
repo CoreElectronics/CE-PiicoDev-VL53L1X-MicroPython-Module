@@ -140,7 +140,7 @@ class PiicoDev_VL53L1X:
             data = self.i2c.readfrom_mem(self.addr, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
         except:
             print(i2c_err_str.format(self.addr))
-            return (float('NaN'), float('NaN'), float('NaN'))
+            return float('NaN')
         range_status = data[0]
         # report_status = data[1]
         stream_count = data[2]
