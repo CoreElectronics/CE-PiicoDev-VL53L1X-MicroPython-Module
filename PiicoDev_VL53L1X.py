@@ -1,5 +1,7 @@
 from PiicoDev_Unified import *
 
+compat_str = '\nUnified PiicoDev library out of date.  Get the latest module: https://piico.dev/unified \n'
+
 VL51L1X_DEFAULT_CONFIGURATION = bytes([
 0x00, # 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else don't touch */
 0x00, # 0x2e : bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) */
@@ -97,14 +99,21 @@ VL51L1X_DEFAULT_CONFIGURATION = bytes([
 
 class PiicoDev_VL53L1X:
     def __init__(self, bus=None, freq=None, sda=None, scl=None, address=0x29):
+        try:
+            if compat_ind >= 1:
+                pass
+            else:
+                print(compat_str)
+        except:
+            print(compat_str)
         self.i2c = create_unified_i2c(bus=bus, freq=freq, sda=sda, scl=scl)
-        self.address = address
+        self.addr = address
         self.reset()
         sleep_ms(1)
         if self.read_model_id() != 0xEACC:
             raise RuntimeError('Failed to find expected ID register values. Check wiring!')
         # write default configuration
-        self.i2c.writeto_mem(self.address, 0x2D, VL51L1X_DEFAULT_CONFIGURATION, addrsize=16)
+        self.i2c.writeto_mem(self.addr, 0x2D, VL51L1X_DEFAULT_CONFIGURATION, addrsize=16)
         sleep_ms(100)
         # the API triggers this change in VL53L1_init_and_start_range() once a
         # measurement is started; assumes MM1 and MM2 are disabled
@@ -112,13 +121,13 @@ class PiicoDev_VL53L1X:
         sleep_ms(200)
 
     def writeReg(self, reg, value):
-        return self.i2c.writeto_mem(self.address, reg, bytes([value]), addrsize=16)
+        return self.i2c.writeto_mem(self.addr, reg, bytes([value]), addrsize=16)
     def writeReg16Bit(self, reg, value):
-        return self.i2c.writeto_mem(self.address, reg, bytes([(value >> 8) & 0xFF, value & 0xFF]), addrsize=16)
+        return self.i2c.writeto_mem(self.addr, reg, bytes([(value >> 8) & 0xFF, value & 0xFF]), addrsize=16)
     def readReg(self, reg):
-        return self.i2c.readfrom_mem(self.address, reg, 1, addrsize=16)[0]
+        return self.i2c.readfrom_mem(self.addr, reg, 1, addrsize=16)[0]
     def readReg16Bit(self, reg):
-        data = self.i2c.readfrom_mem(self.address, reg, 2, addrsize=16)
+        data = self.i2c.readfrom_mem(self.addr, reg, 2, addrsize=16)
         return (data[0]<<8) + data[1]
     def read_model_id(self):
         return self.readReg16Bit(0x010F) 
@@ -127,7 +136,11 @@ class PiicoDev_VL53L1X:
         sleep_ms(100)
         self.writeReg(0x0000, 0x01)
     def read(self):
-        data = self.i2c.readfrom_mem(self.address, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
+        try:
+            data = self.i2c.readfrom_mem(self.addr, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
+        except:
+            print(i2c_err_str.format(self.addr))
+            return (float('NaN'), float('NaN'), float('NaN'))
         range_status = data[0]
         # report_status = data[1]
         stream_count = data[2]
@@ -167,4 +180,4 @@ class PiicoDev_VL53L1X:
     def change_id(self, new_id):
         self.writeReg(0x0001, new_id & 0x7F)
         sleep_ms(50)
-        self.address = new_id
+        self.addr = new_id
