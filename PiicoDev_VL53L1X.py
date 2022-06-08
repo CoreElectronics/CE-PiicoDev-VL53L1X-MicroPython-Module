@@ -177,7 +177,7 @@ class PiicoDev_VL53L1X:
                 #status = "OK"
         return final_crosstalk_corrected_range_mm_sd0
     
-    def change_id(self, new_id):
-        self.writeReg(0x0001, new_id & 0x7F)
+    def change_addr(self, new_addr):
+        self.writeReg(0x0001, new_addr & 0x7F)
         sleep_ms(50)
-        self.addr = new_id
+        self.addr = new_addr

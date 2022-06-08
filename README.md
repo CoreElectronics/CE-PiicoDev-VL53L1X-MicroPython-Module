@@ -31,12 +31,15 @@ bus | int | 0,1 | Raspberry Pi Pico: 0, Raspberry Pi: 1 | I2C Bus.  Ignored on M
 freq | int | 100-1000000 | Device dependent | I2C Bus frequency (Hz).  Ignored on Raspberry Pi
 sda | Pin | Device Dependent | Device Dependent | I2C SDA Pin. Implemented on Raspberry Pi Pico only
 scl | Pin | Device Dependent | Device Dependent | I2C SCL Pin. Implemented on Raspberry Pi Pico only
-address | int | 0x29 | 0x29 | The VL53L1X Distance Sensor address can be set using the change_id function
+address | int | 0x29 | 0x29 | The VL53L1X Distance Sensor address can be set using the change_addr function.
 
 ### PiicoDev_VL53L1X.read()
 Parameter | Type | Unit | Description
 --- | --- | --- | ---
 returned | int | mm | Range
+
+### Using Multiple Sensors
+Since the VL53L1X defaults to a single address, multiple sensors on the same bus will conflict. You can use the change_addr function to use something other than the default, but it will be lost on power down. You can use any spare GPIO on your microcontroller to drive the SHT (shutdown) pin low to disable all the sensors you are using, then bring them up one at a time to give them a unique address each time your code starts. Be sure to pick addresses that are at least 2 away from each other, as reading from the sensor uses your set address + 1.
 
 # License
 This project is open source - please review the LICENSE.md file for further licensing information.
