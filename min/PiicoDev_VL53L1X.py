@@ -21,4 +21,4 @@ class PiicoDev_VL53L1X:
 		try:data=self.i2c.readfrom_mem(self.addr,137,17,addrsize=16)
 		except:print(i2c_err_str.format(self.addr));return float('NaN')
 		range_status=data[0];stream_count=data[2];dss_actual_effective_spads_sd0=(data[3]<<8)+data[4];ambient_count_rate_mcps_sd0=(data[7]<<8)+data[8];final_crosstalk_corrected_range_mm_sd0=(data[13]<<8)+data[14];peak_signal_count_rate_crosstalk_corrected_mcps_sd0=(data[15]<<8)+data[16];return final_crosstalk_corrected_range_mm_sd0
-	def change_id(self,new_id):self.writeReg(1,new_id&127);sleep_ms(50);self.addr=new_id
+	def change_addr(self,new_addr):self.writeReg(1,new_addr&127);sleep_ms(50);self.addr=new_addr
