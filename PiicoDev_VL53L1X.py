@@ -1,8 +1,11 @@
 from PiicoDev_Unified import *
 
-compat_str = '\nUnified PiicoDev library out of date.  Get the latest module: https://piico.dev/unified \n'
 
-VL51L1X_DEFAULT_CONFIGURATION = bytes([
+COMPAT_STRING = '\nUnified PiicoDev library out of date.  Get the latest module: https://piico.dev/unified \n'
+EXPECTED_MODEL_ID = 0xEACC
+
+
+VL53L1X_DEFAULT_CONFIGURATION = bytes([
 0x00, # 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else don't touch */
 0x00, # 0x2e : bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) */
 0x00, # 0x2f : bit 0 if GPIO pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) */
@@ -98,86 +101,131 @@ VL51L1X_DEFAULT_CONFIGURATION = bytes([
 
 
 class PiicoDev_VL53L1X:
-    def __init__(self, bus=None, freq=None, sda=None, scl=None, address=0x29):
+    """
+    The VL53L1X IC is used solely used for the PiicoDev
+    laser-distance-measurement sensor. This class provides
+    methods for an instance to properly initialise and take
+    distance measurements
+    """
+
+    def __init__(self, bus=None, freq=None, sda=None, scl=None, addr=0x29):
+        """
+        On instantiation:
+        - Check compatibilty with installed PiicoDev_Unified.py
+        - Create the i2c instance for serial communication
+        - Flip register 0x0 to reset the VL53L1X
+        - Confirm the model ID is valid
+        - Configure defaults and registers for VL53L1X to allow sensor reading
+        """
         try:
             if compat_ind >= 1:
                 pass
             else:
-                print(compat_str)
+                print(COMPAT_STRING)
         except:
-            print(compat_str)
+            print(COMPAT_STRING)
         self.i2c = create_unified_i2c(bus=bus, freq=freq, sda=sda, scl=scl)
-        self.addr = address
+        self.addr = addr
         self.reset()
         sleep_ms(1)
-        if self.read_model_id() != 0xEACC:
+        if self.read_model_id() != EXPECTED_MODEL_ID:
             raise RuntimeError('Failed to find expected ID register values. Check wiring!')
         # write default configuration
-        self.i2c.writeto_mem(self.addr, 0x2D, VL51L1X_DEFAULT_CONFIGURATION, addrsize=16)
+        self.i2c.writeto_mem(self.addr, 0x2D, VL53L1X_DEFAULT_CONFIGURATION, addrsize=16)
         sleep_ms(100)
         # the API triggers this change in VL53L1_init_and_start_range() once a
         # measurement is started; assumes MM1 and MM2 are disabled
-        self.writeReg16Bit(0x001E, self.readReg16Bit(0x0022) * 4)
+        self.write_reg_16_bit(0x001E, self.read_reg_16_bit(0x0022) * 4)
         sleep_ms(200)
 
-    def writeReg(self, reg, value):
+
+    # ! Note for reviwer: please confirm that the precondition
+    # ! in the docstring is correct
+    def write_reg(self, reg, value):
+        """
+        Helper function to write an 8-bit value from the
+        provided register
+
+        Legal reg values: 0x0 through 0x5A
+        """
         return self.i2c.writeto_mem(self.addr, reg, bytes([value]), addrsize=16)
-    def writeReg16Bit(self, reg, value):
+   
+   
+    # ! Note for reviwer: please confirm that the precondition
+    # ! in the docstring is correct
+    def write_reg_16_bit(self, reg, value):
+        """
+        Helper function to write a 16-bit value from the
+        provided register
+
+        Legal reg values: 0x0 through 0x5A
+        """
         return self.i2c.writeto_mem(self.addr, reg, bytes([(value >> 8) & 0xFF, value & 0xFF]), addrsize=16)
-    def readReg(self, reg):
+   
+   
+    # ! Note for reviwer: please confirm that the precondition
+    # ! in the docstring is correct
+    def read_reg(self, reg):
+        """
+        Helper function to read an 8-bit value from the
+        provided register
+
+        Legal reg values: 0x0 through 0x5A
+        """
         return self.i2c.readfrom_mem(self.addr, reg, 1, addrsize=16)[0]
-    def readReg16Bit(self, reg):
+   
+    # ! Note for reviwer: please confirm that the precondition
+    # ! in the docstring is correct
+    def read_reg_16_bit(self, reg):
+        """
+        Helper function to read a 16-bit value from the
+        provided register
+
+        Legal reg values: 0x0 through 0x5A
+        """
         data = self.i2c.readfrom_mem(self.addr, reg, 2, addrsize=16)
         return (data[0]<<8) + data[1]
+    
+    
     def read_model_id(self):
-        return self.readReg16Bit(0x010F) 
+        """
+        Return the 16-bit value at register 0x010F
+        which is the model ID (not the I2C address) of the VL53L1X
+        """
+        return self.read_reg_16_bit(0x010F) 
+    
+    
     def reset(self):
-        self.writeReg(0x0000, 0x00)
+        """
+        Resets the VL53L1X by setting register 0x0 to 0x0 (off)
+        and after 100ms 0x1 (on)
+        """
+        self.write_reg(0x0000, 0x00)
         sleep_ms(100)
-        self.writeReg(0x0000, 0x01)
+        self.write_reg(0x0000, 0x01)
+    
+    
     def read(self):
+        """
+        Return an integer in mm representing the
+        distance from the sensor to the surface
+        it reflected from
+
+        This is the final crosstalk-corrected range
+        (in mm) from sd0
+        """
         try:
             data = self.i2c.readfrom_mem(self.addr, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
-        except:
+        except: # ! Note for reviewer: Typically best practice is to catch exceptions based on their name rather than loose except calls
             print(i2c_err_str.format(self.addr))
             return float('NaN')
-        range_status = data[0]
-        # report_status = data[1]
-        stream_count = data[2]
-        dss_actual_effective_spads_sd0 = (data[3]<<8) + data[4]
-        # peak_signal_count_rate_mcps_sd0 = (data[5]<<8) + data[6]
-        ambient_count_rate_mcps_sd0 = (data[7]<<8) + data[8]
-        # sigma_sd0 = (data[9]<<8) + data[10]
-        # phase_sd0 = (data[11]<<8) + data[12]
-        final_crosstalk_corrected_range_mm_sd0 = (data[13]<<8) + data[14]
-        peak_signal_count_rate_crosstalk_corrected_mcps_sd0 = (data[15]<<8) + data[16]
-        #status = None
-        #if range_status in (17, 2, 1, 3):
-            #status = "HardwareFail"
-        #elif range_status == 13:
-            #status = "MinRangeFail"
-        #elif range_status == 18:
-            #status = "SynchronizationInt"
-        #elif range_status == 5:
-            #status = "OutOfBoundsFail"
-        #elif range_status == 4:
-            #status = "SignalFail"
-        #elif range_status == 6:
-            #status = "SignalFail"
-        #elif range_status == 7:
-            #status = "WrapTargetFail"
-        #elif range_status == 12:
-            #status = "XtalkSignalFail"
-        #elif range_status == 8:
-            #status = "RangeValidMinRangeClipped"
-        #elif range_status == 9:
-            #if stream_count == 0:
-                #status = "RangeValidNoWrapCheckFail"
-            #else:
-                #status = "OK"
-        return final_crosstalk_corrected_range_mm_sd0
-    
+        return (data[13]<<8) + data[14]
+
+
     def change_addr(self, new_addr):
-        self.writeReg(0x0001, new_addr & 0x7F)
+        """
+        See README.md for instructions on how to use this method appropriately
+        """
+        self.write_reg(0x0001, new_addr & 0x7F)
         sleep_ms(50)
         self.addr = new_addr

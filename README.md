@@ -12,15 +12,14 @@ See the Quickstart Guides for:
 # Usage
 ## Example
 [main.py](https://github.com/CoreElectronics/CE-PiicoDev-VL53L1X-MicroPython-Module/blob/main/main.py) is a simple example to get started.
-```
+```python
 from PiicoDev_VL53L1X import PiicoDev_VL53L1X
 from time import sleep
 
-distSensor = PiicoDev_VL53L1X()
+dist_sensor = PiicoDev_VL53L1X()
 
 while True:
-    dist = distSensor.read() # read the distance in millimetres
-    print(str(dist) + " mm") # convert the number to a string and print
+    print(str(distSensor.read()) + " mm") # read the distance in millimetres convert the number to a string and print
     sleep(0.1)
 ```
 ## Details
