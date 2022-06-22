@@ -220,6 +220,7 @@ class PiicoDev_VL53L1X:
             return float('NaN')
         return (data[13]<<8) + data[14]
 
+
     def change_addr(self, new_addr):
         """
         See README.md for instructions on how to use this method appropriately
