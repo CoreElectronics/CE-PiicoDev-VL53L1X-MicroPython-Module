@@ -1,6 +1,8 @@
 from PiicoDev_Unified import *
 
-compat_str = '\nUnified PiicoDev library out of date.  Get the latest module: https://piico.dev/unified \n'
+
+COMPAT_STRING = '\nUnified PiicoDev library out of date.  Get the latest module: https://piico.dev/unified \n'
+
 
 VL51L1X_DEFAULT_CONFIGURATION = bytes([
 0x00, # 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else don't touch */
@@ -103,9 +105,9 @@ class PiicoDev_VL53L1X:
             if compat_ind >= 1:
                 pass
             else:
-                print(compat_str)
+                print(COMPAT_STRING)
         except:
-            print(compat_str)
+            print(COMPAT_STRING)
         self.i2c = create_unified_i2c(bus=bus, freq=freq, sda=sda, scl=scl)
         self.addr = address
         self.reset()
@@ -120,21 +122,34 @@ class PiicoDev_VL53L1X:
         self.writeReg16Bit(0x001E, self.readReg16Bit(0x0022) * 4)
         sleep_ms(200)
 
+
     def writeReg(self, reg, value):
         return self.i2c.writeto_mem(self.addr, reg, bytes([value]), addrsize=16)
+   
+   
     def writeReg16Bit(self, reg, value):
         return self.i2c.writeto_mem(self.addr, reg, bytes([(value >> 8) & 0xFF, value & 0xFF]), addrsize=16)
+   
+   
     def readReg(self, reg):
         return self.i2c.readfrom_mem(self.addr, reg, 1, addrsize=16)[0]
+   
+   
     def readReg16Bit(self, reg):
         data = self.i2c.readfrom_mem(self.addr, reg, 2, addrsize=16)
         return (data[0]<<8) + data[1]
+    
+    
     def read_model_id(self):
         return self.readReg16Bit(0x010F) 
+    
+    
     def reset(self):
         self.writeReg(0x0000, 0x00)
         sleep_ms(100)
         self.writeReg(0x0000, 0x01)
+    
+    
     def read(self):
         try:
             data = self.i2c.readfrom_mem(self.addr, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
@@ -142,41 +157,14 @@ class PiicoDev_VL53L1X:
             print(i2c_err_str.format(self.addr))
             return float('NaN')
         range_status = data[0]
-        # report_status = data[1]
         stream_count = data[2]
         dss_actual_effective_spads_sd0 = (data[3]<<8) + data[4]
-        # peak_signal_count_rate_mcps_sd0 = (data[5]<<8) + data[6]
         ambient_count_rate_mcps_sd0 = (data[7]<<8) + data[8]
-        # sigma_sd0 = (data[9]<<8) + data[10]
-        # phase_sd0 = (data[11]<<8) + data[12]
         final_crosstalk_corrected_range_mm_sd0 = (data[13]<<8) + data[14]
         peak_signal_count_rate_crosstalk_corrected_mcps_sd0 = (data[15]<<8) + data[16]
-        #status = None
-        #if range_status in (17, 2, 1, 3):
-            #status = "HardwareFail"
-        #elif range_status == 13:
-            #status = "MinRangeFail"
-        #elif range_status == 18:
-            #status = "SynchronizationInt"
-        #elif range_status == 5:
-            #status = "OutOfBoundsFail"
-        #elif range_status == 4:
-            #status = "SignalFail"
-        #elif range_status == 6:
-            #status = "SignalFail"
-        #elif range_status == 7:
-            #status = "WrapTargetFail"
-        #elif range_status == 12:
-            #status = "XtalkSignalFail"
-        #elif range_status == 8:
-            #status = "RangeValidMinRangeClipped"
-        #elif range_status == 9:
-            #if stream_count == 0:
-                #status = "RangeValidNoWrapCheckFail"
-            #else:
-                #status = "OK"
         return final_crosstalk_corrected_range_mm_sd0
     
+
     def change_addr(self, new_addr):
         self.writeReg(0x0001, new_addr & 0x7F)
         sleep_ms(50)
