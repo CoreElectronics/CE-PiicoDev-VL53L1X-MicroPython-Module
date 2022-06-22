@@ -119,53 +119,51 @@ class PiicoDev_VL53L1X:
         sleep_ms(100)
         # the API triggers this change in VL53L1_init_and_start_range() once a
         # measurement is started; assumes MM1 and MM2 are disabled
-        self.writeReg16Bit(0x001E, self.readReg16Bit(0x0022) * 4)
+        self.write_reg_16_bit(0x001E, self.read_reg_16_bit(0x0022) * 4)
         sleep_ms(200)
 
 
-    def writeReg(self, reg, value):
+    def write_reg(self, reg, value):
         return self.i2c.writeto_mem(self.addr, reg, bytes([value]), addrsize=16)
    
    
-    def writeReg16Bit(self, reg, value):
+    def write_reg_16_bit(self, reg, value):
         return self.i2c.writeto_mem(self.addr, reg, bytes([(value >> 8) & 0xFF, value & 0xFF]), addrsize=16)
    
    
-    def readReg(self, reg):
+    def read_reg(self, reg):
         return self.i2c.readfrom_mem(self.addr, reg, 1, addrsize=16)[0]
    
    
-    def readReg16Bit(self, reg):
+    def read_reg_16_bit(self, reg):
         data = self.i2c.readfrom_mem(self.addr, reg, 2, addrsize=16)
         return (data[0]<<8) + data[1]
     
     
     def read_model_id(self):
-        return self.readReg16Bit(0x010F) 
+        return self.read_reg_16_bit(0x010F) 
     
     
     def reset(self):
-        self.writeReg(0x0000, 0x00)
+        self.write_reg(0x0000, 0x00)
         sleep_ms(100)
-        self.writeReg(0x0000, 0x01)
+        self.write_reg(0x0000, 0x01)
     
     
     def read(self):
+        """
+        Return a float representing the distance from the sensor to the surface it reflected from
+
+        This is the final crosstalk-corrected range in mm from sd0
+        """
         try:
             data = self.i2c.readfrom_mem(self.addr, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
-        except:
+        except: # ! Note for reviewer: Typically best practice is to catch exceptions based on their name rather than loose except calls
             print(i2c_err_str.format(self.addr))
             return float('NaN')
-        range_status = data[0]
-        stream_count = data[2]
-        dss_actual_effective_spads_sd0 = (data[3]<<8) + data[4]
-        ambient_count_rate_mcps_sd0 = (data[7]<<8) + data[8]
-        final_crosstalk_corrected_range_mm_sd0 = (data[13]<<8) + data[14]
-        peak_signal_count_rate_crosstalk_corrected_mcps_sd0 = (data[15]<<8) + data[16]
-        return final_crosstalk_corrected_range_mm_sd0
-    
+        return (data[13]<<8) + data[14]
 
     def change_addr(self, new_addr):
-        self.writeReg(0x0001, new_addr & 0x7F)
+        self.write_reg(0x0001, new_addr & 0x7F)
         sleep_ms(50)
         self.addr = new_addr
