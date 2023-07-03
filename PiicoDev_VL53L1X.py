@@ -108,6 +108,7 @@ class PiicoDev_VL53L1X:
             print(compat_str)
         self.i2c = create_unified_i2c(bus=bus, freq=freq, sda=sda, scl=scl)
         self.addr = address
+        self.status = None
         self.reset()
         sleep_ms(1)
         if self.read_model_id() != 0xEACC:
@@ -135,6 +136,7 @@ class PiicoDev_VL53L1X:
         self.writeReg(0x0000, 0x00)
         sleep_ms(100)
         self.writeReg(0x0000, 0x01)
+    
     def read(self):
         try:
             data = self.i2c.readfrom_mem(self.addr, 0x0089, 17, addrsize=16) # RESULT__RANGE_STATUS
@@ -151,30 +153,30 @@ class PiicoDev_VL53L1X:
         # phase_sd0 = (data[11]<<8) + data[12]
         final_crosstalk_corrected_range_mm_sd0 = (data[13]<<8) + data[14]
         peak_signal_count_rate_crosstalk_corrected_mcps_sd0 = (data[15]<<8) + data[16]
-        #status = None
-        #if range_status in (17, 2, 1, 3):
-            #status = "HardwareFail"
-        #elif range_status == 13:
-            #status = "MinRangeFail"
-        #elif range_status == 18:
-            #status = "SynchronizationInt"
-        #elif range_status == 5:
-            #status = "OutOfBoundsFail"
-        #elif range_status == 4:
-            #status = "SignalFail"
-        #elif range_status == 6:
-            #status = "SignalFail"
-        #elif range_status == 7:
-            #status = "WrapTargetFail"
-        #elif range_status == 12:
-            #status = "XtalkSignalFail"
-        #elif range_status == 8:
-            #status = "RangeValidMinRangeClipped"
-        #elif range_status == 9:
-            #if stream_count == 0:
-                #status = "RangeValidNoWrapCheckFail"
-            #else:
-                #status = "OK"
+        status = None
+        if range_status in (17, 2, 1, 3):
+            self.status = "HardwareFail"
+        elif range_status == 13:
+            self.status = "MinRangeFail"
+        elif range_status == 18:
+            self.status = "SynchronizationInt"
+        elif range_status == 5:
+            self.status = "OutOfBoundsFail"
+        elif range_status == 4:
+            self.status = "SignalFail"
+        elif range_status == 6:
+            self.status = "SignalFail"
+        elif range_status == 7:
+            self.status = "WrapTargetFail"
+        elif range_status == 12:
+            self.status = "XtalkSignalFail"
+        elif range_status == 8:
+            self.status = "RangeValidMinRangeClipped"
+        elif range_status == 9:
+            if stream_count == 0:
+                self.status = "RangeValidNoWrapCheckFail"
+            else:
+                self.status = "OK"
         return final_crosstalk_corrected_range_mm_sd0
     
     def change_addr(self, new_addr):
